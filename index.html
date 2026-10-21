@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I love you so much 💗</title>
+ <style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #08030d;
+    color: #ff9edb;
+    font-family: Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .scene {
+    width: min(700px, 100vw);
+    padding: 10px 10px 18px;
+    text-align: center;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #08030d;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="scene">
+  <canvas id="loveCanvas" width="680" height="650" aria-label="Animated love heart. Click anywhere for a little magic."></canvas>
+</div>
+<script>
+(() => {
+  const canvas = document.getElementById("loveCanvas");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const TAU = Math.PI * 2;
+  let time = 0;
+  const stars = [];
+  const particles = [];
+  const burst = [];
+
+  function heart(t, size = 15) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+    return [340 + x * size, 340 - y * size];
+  }
+  const rand = (a, b) => Math.random() * (b-a) + a;
+  const choice = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  for (let i = 0; i < 65; i++) {
+    stars.push({
+      x: Math.floor(rand(20, 661)),
+      y: Math.floor(rand(100, 621)),
+      size: 2,
+      color: "#a94b91",
+      twinkle: Math.random() < 0.03
+    });
+  }
+  for (let i = 0; i < 170; i++) {
+    particles.push({ t: i * TAU / 170, offset: i * 0.13 });
+  }
+
+  function drawText(text, x, y, color, font, align = "center") {
+    ctx.fillStyle = color;
+    ctx.font = font;
+    ctx.textAlign = align;
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+  }
+
+  function drawHeartOutline() {
+    ctx.beginPath();
+    for (let i = 0; i <= 300; i++) {
+      const [x, y] = heart(i * TAU / 300, 12);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = "#ff55bd";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "#ff55bd";
+    ctx.shadowBlur = 7;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#08030d";
+    ctx.fillRect(0, 0, W, H);
+
+    drawText("This is for My Rasgulla", 340, 35, "#ff9edb", "bold 23px Arial");
+    drawText("MADE WITH LOVE", 340, 75, "#bd77b5", "11px Arial");
+
+    // Background stars, with the same gentle random twinkle as the Python version.
+    for (const s of stars) {
+      if (Math.random() < 0.03) {
+        s.size = Math.floor(rand(1, 4));
+        s.color = choice(["#a94b91", "#ff9edb", "#bd77b5", "#ffc1e6"]);
+      }
+      ctx.fillStyle = s.color;
+      ctx.fillRect(s.x, s.y, s.size, s.size);
+    }
+
+    // Heart outline
+    drawHeartOutline();
+
+    // "I love you" text particles moving around the heart
+    for (const p of particles) {
+      const scale = 12 + 1.2 * Math.sin(time * 2 + p.offset);
+      const [x, y] = heart(p.t + time * 0.3, scale);
+      const alpha = (Math.sin(time * 3 + p.offset) + 1) / 2;
+      const r = Math.max(0, Math.min(255, Math.round(255 - 40 * alpha)));
+      const g = Math.max(0, Math.min(255, Math.round(155 - 30 * alpha)));
+      const b = Math.max(0, Math.min(255, Math.round(214 - 20 * alpha)));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.font = "bold 8px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("I love you", x, y);
+    }
+
+    // Center heart with a gentle pulse
+    const pulse = 38 + 4 * Math.sin(time * 3);
+    ctx.save();
+    ctx.shadowColor = "#ff5bbd";
+    ctx.shadowBlur = 14;
+    drawText("♥", 340, 340, "#ff5bbd", `bold ${Math.floor(pulse)}px Arial`);
+    ctx.restore();
+
+    // Click-burst particles
+    for (let i = burst.length - 1; i >= 0; i--) {
+      const p = burst[i];
+      p.life += 1;
+      if (p.life > 40) {
+        burst.splice(i, 1);
+        continue;
+      }
+      const dx = Math.cos(p.angle) * p.speed;
+      const dy = Math.sin(p.angle) * p.speed - p.life * 0.08;
+      p.x += dx;
+      p.y += dy;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - p.life / 42);
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 5;
+      drawText(p.symbol, p.x, p.y, p.color, `${p.fontSize}px Arial`);
+      ctx.restore();
+    }
+
+    drawText("I LOVE YOU ♥", 340, 590, "#ffc1e6", "bold 24px Arial");
+    drawText("Click anywhere for a little magic", 340, 620, "#a86e9c", "10px Arial");
+
+    time += 0.05;
+    requestAnimationFrame(draw);
+  }
+
+  function makeBurst(event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) * (W / rect.width);
+    const y = (event.clientY - rect.top) * (H / rect.height);
+    for (let i = 0; i < 18; i++) {
+      burst.push({
+        x, y,
+        symbol: choice(["♥", "✦", "♡"]),
+        color: choice(["#ff5bbd", "#ffc1e6", "#ff9edb", "#ff77cc"]),
+        fontSize: Math.floor(rand(10, 19)),
+        angle: rand(0, TAU),
+        speed: rand(2, 7),
+        life: 0
+      });
+    }
+  }
+  canvas.addEventListener("click", makeBurst);
+  draw();
+})();
+</script>
+</body>
+</html>
